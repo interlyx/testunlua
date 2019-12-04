@@ -390,7 +390,7 @@ void* NewScriptContainer(lua_State *L, const FScriptContainerDesc &Desc)
 
 static void stackDump(lua_State* L)
 {
-	
+	return;
 	int i = 0;
 	int top = lua_gettop(L);
 	UE_LOG(LogUnLua, Warning, TEXT("===================begin dump lua stack,size:%d"),top);
@@ -426,7 +426,7 @@ static void stackDump(lua_State* L)
 
 FString GetLuaCallStackLocal(lua_State *L)
 {
-	stackDump(L);
+	//stackDump(L);
 // 	if (!L)
 // 	{
 // 		return TEXT("Lua state is not created!!!");
@@ -554,7 +554,7 @@ void* CacheScriptContainer(lua_State *L, void *Key, const FScriptContainerDesc &
 	stackDump(L);
 	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
 
-    //if (Type == LUA_TNIL)
+    if (Type == LUA_TNIL)//如果注释掉这里，不采用缓存的情况下就不会产生崩溃
     {
         lua_pop(L, 1);
 		stackDump(L);
@@ -585,14 +585,14 @@ void* CacheScriptContainer(lua_State *L, void *Key, const FScriptContainerDesc &
 		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
     }
 #if UE_BUILD_DEBUG
-// 	else
-// 	{
-// 		check(Type == LUA_TUSERDATA);
-// 	}
-
+	else
 	{
-		check(Type == LUA_TUSERDATA || Type == LUA_TNIL);
+		check(Type == LUA_TUSERDATA);
 	}
+
+// 	{
+// 		check(Type == LUA_TUSERDATA || Type == LUA_TNIL);
+// 	}
 #endif
     lua_remove(L, -2);
 	stackDump(L);

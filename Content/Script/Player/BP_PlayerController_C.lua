@@ -73,7 +73,7 @@ function BP_PlayerController_C:Fire_Pressed()
 	-- array:Add("FString2")
 	-- array:Add("FString3")
 	-- array:Add("FString4")
-	-- self:TestArrayString(array)--crash
+	-- self:TestArrayString(array)--crash TestArrayString是个run in server的bp event
 
 	print("=============start test int32 array")
 	local array = UE4.TArray(int32)
@@ -83,11 +83,11 @@ function BP_PlayerController_C:Fire_Pressed()
 	array:Add(400)
 	self:TestArrayInt(array)--crash
 
-	if self.Pawn then
-		UE4.UBPI_Interfaces_C.StartFire(self.Pawn)
-	else
-		UE4.UKismetSystemLibrary.ExecuteConsoleCommand(self, "RestartLevel")
-	end
+	-- if self.Pawn then
+	-- 	UE4.UBPI_Interfaces_C.StartFire(self.Pawn)
+	-- else
+	-- 	UE4.UKismetSystemLibrary.ExecuteConsoleCommand(self, "RestartLevel")
+	-- end
 end
 
 function BP_PlayerController_C:Fire_Released()
@@ -103,7 +103,7 @@ function BP_PlayerController_C:Aim_Pressed()
 		self.bpintarray:Add(300)
 		self.bpintarray:Add(400)
 	end
-	self:BPTestFunc()
+	self:BPTestFunc()--ok
 
 
 	

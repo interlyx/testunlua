@@ -23,7 +23,7 @@ end
 
 function UnLuaPerformanceTestProxy:NativeEvent()
 	print("this is lua native event")
-	--self.Overridden.NativeEvent(self)--crash
+	--self.Overridden.NativeEvent(self)--crash nativeEvent调用overridden会产生crash
 end
 
 
@@ -117,7 +117,7 @@ function UnLuaPerformanceTestProxy:ReceiveBeginPlay()
 		print("===02")
 		obj.mymultidelegate:Broadcast(COM,true)
 		print("===03")
-		obj.mymultidelegate:Broadcast(COM,false)--crash
+		obj.mymultidelegate:Broadcast(COM,false)
 		print("===04")
 		obj.mymultidelegate:Broadcast(COM,false)
 		print("===05")
@@ -133,11 +133,11 @@ function UnLuaPerformanceTestProxy:ReceiveBeginPlay()
 		print("===00")
 		obj.mymultidelegate:Clear()
 
-		for i=1,10 do
+		for i=1,100 do
 			print("===1")
 			obj.mydelegate:Bind(self,UnLuaPerformanceTestProxy.TestObjectDelegate)
 			print("===2")
-			obj.mydelegate:Execute(TestInts,true)--循环第二次执行到这里的时候崩溃
+			obj.mydelegate:Execute(TestInts,true)--crash 循环第二次执行到这里的时候崩溃
 			print("===3")
 			obj.mydelegate:Execute(TestInts,false)
 			print("===4")
