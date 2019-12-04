@@ -341,6 +341,11 @@ public:
         : FPropertyDesc(InProperty)
     {
         InnerProperty = FPropertyDesc::Create(ArrayProperty->Inner);        // create inner property descriptor
+
+		FString strname;
+		ArrayProperty->GetName(strname);
+		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Create(ArrayProperty->Inner) InnerPropertyName:%s,arrayPropertyName:%s,InnerPropertyAddress:%d!"),
+			*InnerProperty->GetName(), *strname, InnerProperty);
     }
 
     virtual ~FArrayPropertyDesc()
@@ -348,7 +353,8 @@ public:
 		FString strname;
 		ArrayProperty->GetName(strname);
 
-		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Release(InnerProperty) InnerPropertyName:%s,arrayPropertyName:%s!"), *InnerProperty->GetName(), *strname);
+		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Release(InnerProperty) InnerPropertyName:%s,arrayPropertyName:%s,InnerPropertyAddress:%d!"),
+			*InnerProperty->GetName(), *strname, InnerProperty);
 
         FPropertyDesc::Release(InnerProperty);                              // release inner property descriptor
 		InnerProperty = nullptr;

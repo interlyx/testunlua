@@ -54,6 +54,7 @@ class AUnLuaPerformanceTestProxy : public AActor, public IUnLuaInterface
 public:
 
 	DECLARE_DYNAMIC_DELEGATE_TwoParams(FUnLuaPerformanceTestDelegate, int32, myint, float, myfloat);
+	DECLARE_DYNAMIC_DELEGATE_TwoParams(FUnLuaPerformanceTestDelegate2, const TArray<int32> &, myints, bool, mybool);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUnLuaPerformanceTestMutilDelegate, int32, myint, float, myfloat);
 
 	UFUNCTION(BlueprintPure)
@@ -167,6 +168,9 @@ private:
 
 	UPROPERTY()
 	FUnLuaPerformanceTestDelegate TestDelegate;
+
+	UPROPERTY()
+	FUnLuaPerformanceTestDelegate2 TestDelegate2;
 
 	FUnLuaPerformanceTestMutilDelegate TestMultiDelegate;
 };

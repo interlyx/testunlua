@@ -73,6 +73,19 @@ function UnLuaPerformanceTestProxy:ReceiveBeginPlay()
 	RawObject.TestDelegate:Execute(222,3457.234)
 	RawObject.TestDelegate:Unbind()
 
+	local MyTestInts = UE4.TArray(int32)
+	for i=1, 11 do
+		MyTestInts:Add(i)
+	end
+
+	for i=1, 10 do
+		RawObject.TestDelegate2:Bind(self,UnLuaPerformanceTestProxy.TestObjectDelegate)
+		RawObject.TestDelegate2:Execute(MyTestInts,false)
+		RawObject.TestDelegate2:Execute(MyTestInts,true)
+		RawObject.TestDelegate2:Execute(MyTestInts,false)
+		RawObject.TestDelegate2:Unbind()
+	end
+
 	local TestStrings = UE4.TArray(UE4.FString)
 	for i=1, 10 do
 		local str = "str" .. i
@@ -139,9 +152,8 @@ function UnLuaPerformanceTestProxy:ReceiveBeginPlay()
 			print("===2")
 			obj.mydelegate:Execute(TestInts,true)--crash 循环第二次执行到这里的时候崩溃
 			print("===3")
-			obj.mydelegate:Execute(TestInts,false)
-			print("===4")
 			obj.mydelegate:Unbind()
+			TestInts:Add(i)
 		end
 
 
