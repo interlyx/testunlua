@@ -32,7 +32,7 @@
 #include "Editor.h"
 #endif
 
-#if UE_BUILD_TEST
+//#if UE_BUILD_TEST
 #include "Tests/UnLuaPerformanceTestProxy.h"
 
 void RunPerformanceTest(UWorld *World)
@@ -43,7 +43,7 @@ void RunPerformanceTest(UWorld *World)
     }
     static AActor *PerformanceTestProxy = World->SpawnActor(AUnLuaPerformanceTestProxy::StaticClass());
 }
-#endif
+//#endif
 
 static UUnLuaManager *SManager = nullptr;
 
@@ -673,9 +673,9 @@ void FLuaContext::PostLoadMapWithWorld(UWorld *World)
     // register callback for spawning an actor
     OnActorSpawnedHandle = World->AddOnActorSpawnedHandler(FOnActorSpawned::FDelegate::CreateUObject(Manager, &UUnLuaManager::OnActorSpawned));
 
-#if UE_BUILD_TEST
+//#if UE_BUILD_TEST
     RunPerformanceTest(World);
-#endif
+//#endif
 }
 
 /**

@@ -74,7 +74,7 @@ public class UnLua : ModuleRules
             PublicDefinitions.Add("WITH_UE4_NAMESPACE=1");
         }
 
-        bool bSupportsRpcCall = false;
+        bool bSupportsRpcCall = true;
         if (bSupportsRpcCall)
         {
             PublicDefinitions.Add("SUPPORTS_RPC_CALL=1");

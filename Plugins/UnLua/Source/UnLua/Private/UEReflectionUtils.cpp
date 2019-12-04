@@ -343,10 +343,16 @@ public:
         InnerProperty = FPropertyDesc::Create(ArrayProperty->Inner);        // create inner property descriptor
     }
 
-    ~FArrayPropertyDesc()
+    virtual ~FArrayPropertyDesc()
     {
+		FString strname;
+		ArrayProperty->GetName(strname);
+
+		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Release(InnerProperty) InnerPropertyName:%s,arrayPropertyName:%s!"), *InnerProperty->GetName(), *strname);
+
         FPropertyDesc::Release(InnerProperty);                              // release inner property descriptor
-    }
+		InnerProperty = nullptr;
+	}
 
     virtual bool CopyBack(lua_State *L, int32 SrcIndexInStack, void *DestContainerPtr) override
     {
@@ -383,11 +389,20 @@ public:
         }
         else
         {
+			FString strname;
+			ArrayProperty->GetName(strname);
+
+			if (strname == "myints")
+			{
+				int i = 0;
+			}
+
             FScriptArray *ScriptArray = (FScriptArray*)(&ArrayProperty->GetPropertyValue(ValuePtr));
             void *Userdata = CacheScriptContainer(L, ScriptArray, FScriptContainerDesc::Array);
             if (Userdata)
             {
                 FLuaArray *LuaArray = new(Userdata) FLuaArray(ScriptArray, InnerProperty, FLuaArray::OwnedByOther);
+				int j = 0;
             }
         }
     }
@@ -955,6 +970,10 @@ FFunctionDesc::FFunctionDesc(UFunction *InFunction, FParameterCollection *InDefa
     check(InFunction);
 
     FuncName = InFunction->GetName();
+	if (FuncName == "UpdateStrings")
+	{
+		int i = 0;
+	}
 
     bStaticFunc = InFunction->HasAnyFunctionFlags(FUNC_Static);         // a static function?
 
@@ -1138,6 +1157,11 @@ int32 FFunctionDesc::CallUE(lua_State *L, int32 NumParams, void *Userdata)
 {
     check(Function);
 
+	if (Function->GetName() == "GetDelegate")
+	{
+		int i = 0;
+	}
+
     int32 FirstParamIndex = 1;
     UObject *Object = nullptr;
     if (bStaticFunc)
@@ -1254,6 +1278,7 @@ void* FFunctionDesc::PreCall(lua_State *L, int32 NumParams, int32 FirstParamInde
 {
 #if ENABLE_PERSISTENT_PARAM_BUFFER
     void *Params = Buffer;
+	const uint32 Size = FMemory::GetAllocSize(Buffer);
 #else
     void *Params = Function->ParmsSize > 0 ? FMemory::Malloc(Function->ParmsSize, 16) : nullptr;
 #endif

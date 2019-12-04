@@ -6,9 +6,6 @@ local BP_PlayerController_C = Class()
 --end
 
 function BP_PlayerController_C:ReceiveBeginPlay()
-	local Widget = UE4.UWidgetBlueprintLibrary.Create(self, UE4.UClass.Load("/Game/Core/UI/UMG_Main"))
-	Widget:AddToViewport()
-
 	self.ForwardVec = UE4.FVector()
 	self.RightVec = UE4.FVector()
 	self.ControlRot = UE4.FRotator()
@@ -16,10 +13,14 @@ function BP_PlayerController_C:ReceiveBeginPlay()
 	self.BaseTurnRate = 45.0
 	self.BaseLookUpRate = 45.0
 
+	-- local Widget = UE4.UWidgetBlueprintLibrary.Create(self, UE4.UClass.Load("/Game/Core/UI/UMG_Main"))
+	-- Widget:AddToViewport()
+
 	self.Overridden.ReceiveBeginPlay(self)
 end
 
 function BP_PlayerController_C:Turn(AxisValue)
+	--print("=============Turn")
 	self:AddYawInput(AxisValue)
 end
 
@@ -30,16 +31,21 @@ function BP_PlayerController_C:TurnRate(AxisValue)
 end
 
 function BP_PlayerController_C:LookUp(AxisValue)
+	--print("=============LookUp")
 	self:AddPitchInput(AxisValue)
 end
 
 function BP_PlayerController_C:LookUpRate(AxisValue)
+	--print("=============LookUpRate")
 	local DeltaSeconds = UE4.UGameplayStatics.GetWorldDeltaSeconds(self)
 	local Value = AxisValue * DeltaSeconds * self.BaseLookUpRate
 	self:AddPitchInput(Value)
 end
 
 function BP_PlayerController_C:MoveForward(AxisValue)
+	--print("=============MoveForward")
+	-- self.bpintarray:Add(1)
+	-- self:BPTestFunc()
 	if self.Pawn then
 		local Rotation = self:GetControlRotation(self.ControlRot)
 		Rotation:Set(0, Rotation.Yaw, 0)
@@ -49,6 +55,9 @@ function BP_PlayerController_C:MoveForward(AxisValue)
 end
 
 function BP_PlayerController_C:MoveRight(AxisValue)
+	--print("=============MoveRight")
+	-- self.bpintarray:Add(2)
+	-- self:BPTestFunc()
 	if self.Pawn then
 		local Rotation = self:GetControlRotation(self.ControlRot)
 		Rotation:Set(0, Rotation.Yaw, 0)
@@ -58,6 +67,22 @@ function BP_PlayerController_C:MoveRight(AxisValue)
 end
 
 function BP_PlayerController_C:Fire_Pressed()
+	-- print("=============start test string array")
+	-- local array = UE4.TArray(FString)
+	-- array:Add("FString1")
+	-- array:Add("FString2")
+	-- array:Add("FString3")
+	-- array:Add("FString4")
+	-- self:TestArrayString(array)--crash
+
+	print("=============start test int32 array")
+	local array = UE4.TArray(int32)
+	array:Add(100)
+	array:Add(200)
+	array:Add(300)
+	array:Add(400)
+	self:TestArrayInt(array)--crash
+
 	if self.Pawn then
 		UE4.UBPI_Interfaces_C.StartFire(self.Pawn)
 	else
@@ -70,6 +95,18 @@ function BP_PlayerController_C:Fire_Released()
 end
 
 function BP_PlayerController_C:Aim_Pressed()
+	print("=============start test string array trigger from bp")
+	
+	if self.bpintarray:Length() == 0 then
+		self.bpintarray:Add(100)
+		self.bpintarray:Add(200)
+		self.bpintarray:Add(300)
+		self.bpintarray:Add(400)
+	end
+	self:BPTestFunc()
+
+
+	
 	UE4.UBPI_Interfaces_C.UpdateAiming(self.Pawn, true)
 end
 

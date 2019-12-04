@@ -16,7 +16,35 @@
 
 #include "GameFramework/Actor.h"
 #include "UnLuaInterface.h"
+#include "DelegateCombinations.h"
 #include "UnLuaPerformanceTestProxy.generated.h"
+
+
+UCLASS()
+class UClassObject : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	DECLARE_DYNAMIC_DELEGATE_TwoParams(FClassObjectDelegate, const TArray<int32> &, myints, bool, mybool);
+	DECLARE_DYNAMIC_DELEGATE_TwoParams(FClassObjectDelegate2, const FVector & ,myvector, bool, mybool);
+// 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FClassObjectMultiDelegate, const TArray<int32> &, myints)
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FClassObjectMultiDelegate, const FVector &, myvector, bool, mybool);
+
+	UPROPERTY()
+	int32 type = 0;
+
+	UPROPERTY()
+	FClassObjectDelegate mydelegate;
+
+	UPROPERTY()
+	FClassObjectDelegate2 mydelegate2;
+
+	UPROPERTY()
+	FClassObjectMultiDelegate mymultidelegate;
+
+};
+
 
 UCLASS()
 class AUnLuaPerformanceTestProxy : public AActor, public IUnLuaInterface
@@ -24,6 +52,27 @@ class AUnLuaPerformanceTestProxy : public AActor, public IUnLuaInterface
     GENERATED_BODY()
 
 public:
+
+	DECLARE_DYNAMIC_DELEGATE_TwoParams(FUnLuaPerformanceTestDelegate, int32, myint, float, myfloat);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUnLuaPerformanceTestMutilDelegate, int32, myint, float, myfloat);
+
+	UFUNCTION(BlueprintPure)
+		FUnLuaPerformanceTestDelegate & GetDelegate() { return TestDelegate; };
+
+	UFUNCTION(BlueprintCallable)
+		void AddToMultiDelegate(const FUnLuaPerformanceTestDelegate & InDelegate) { TestMultiDelegate.Add(InDelegate); };
+
+	UFUNCTION(BlueprintCallable)
+		void BroadcastMultiDelegate(int32 myint, float myfloat) { TestMultiDelegate.Broadcast(myint, myfloat); };
+
+	UFUNCTION(BlueprintCallable)
+		void ClearMultiDelegate() { TestMultiDelegate.Clear(); };
+
+	UFUNCTION(BlueprintPure)
+		int & GetAAA() { return a; };
+
+	int a = 5;
+
     UFUNCTION(BlueprintCallable)
     void NOP();
 
@@ -63,6 +112,15 @@ public:
     UFUNCTION(BlueprintCallable)
     const TArray<FVector>& GetPredictedPositions() const;
 
+	UFUNCTION(BlueprintCallable)
+	const TArray<UClassObject*>& GetObjects() const;
+
+	UFUNCTION(BlueprintCallable,Server,Reliable)
+	void ServerUpdateStrings(const TArray<FString> & NewStrings);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	void ServerUpdateInts(const TArray<int32> & newarray);
+
     UFUNCTION(BlueprintCallable)
     bool GetMeshInfo(int32 &OutMeshID, FString &OutMeshName, FVector &OutCOM, TArray<int32> &OutIndices, TArray<FVector> &OutPositions, TArray<FVector> &OutPredictedPositions) const;
 
@@ -70,6 +128,20 @@ public:
     {
         return TEXT("UnLuaPerformanceTestProxy");
     }
+
+	UFUNCTION(BlueprintNativeEvent)
+		void NativeEvent();
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void ImplementationEvent();
+
+	UFUNCTION(BlueprintCallable)
+	void SetDelegate(FUnLuaPerformanceTestDelegate delegate, int myint, float myfloat);
+
+	void testBindFunc(int32 myint, float myfloat);
+
+	UFUNCTION(BlueprintCallable)
+	void printA();
 
 private:
     UPROPERTY()
@@ -89,4 +161,12 @@ private:
 
     UPROPERTY()
     TArray<FVector> PredictedPositions;
+
+	UPROPERTY()
+	TArray<UClassObject *> Objects;
+
+	UPROPERTY()
+	FUnLuaPerformanceTestDelegate TestDelegate;
+
+	FUnLuaPerformanceTestMutilDelegate TestMultiDelegate;
 };

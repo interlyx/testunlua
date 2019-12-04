@@ -28,6 +28,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "UnLuaDebugBase.h"
 
 extern "C"
 {
@@ -387,6 +388,142 @@ void* NewScriptContainer(lua_State *L, const FScriptContainerDesc &Desc)
     return Userdata;
 }
 
+static void stackDump(lua_State* L)
+{
+	
+	int i = 0;
+	int top = lua_gettop(L);
+	UE_LOG(LogUnLua, Warning, TEXT("===================begin dump lua stack,size:%d"),top);
+	for (i = 1; i <= top; ++i)
+	{
+		int t = lua_type(L, i);
+		switch (t)
+		{
+		case LUA_TSTRING:
+		{
+			UE_LOG(LogUnLua, Warning, TEXT("type:string  value:%s"), ANSI_TO_TCHAR(lua_tostring(L, i)));
+		}
+		break;
+		case LUA_TBOOLEAN:
+		{
+			UE_LOG(LogUnLua, Warning, TEXT("type:bool  value::%s"), ANSI_TO_TCHAR(lua_toboolean(L, i) ? "true " : "false "));
+		}
+		break;
+		case LUA_TNUMBER:
+		{
+			UE_LOG(LogUnLua, Warning, TEXT("type:number  value::%d"), lua_tonumber(L, i));
+		}
+		break;
+		default:
+		{
+			UE_LOG(LogUnLua, Warning, TEXT("type:%s value:__"), ANSI_TO_TCHAR(lua_typename(L, t)));
+		}
+		break;
+		}
+	}
+	UE_LOG(LogUnLua, Warning, TEXT("====================end dump lua stack"));
+}
+
+FString GetLuaCallStackLocal(lua_State *L)
+{
+	stackDump(L);
+// 	if (!L)
+// 	{
+// 		return TEXT("Lua state is not created!!!");
+// 	}
+// 
+// 	int32 Depth = 0;
+// 	lua_Debug ar;
+ 	FString CallStack = TEXT("Lua stack : \n");
+// // 	while (lua_getstack(L, Depth++, &ar))
+// // 	{
+// // 		lua_getinfo(L, "nSl", &ar);
+// // 		FString DisplayInfo = FString::Printf(TEXT("Source : %s, name : %s, Line : %d \n"), ANSI_TO_TCHAR(ar.source), ANSI_TO_TCHAR(ar.name), ar.currentline);
+// // 		CallStack += DisplayInfo;
+// // 	}
+// // 
+// // 	//if (!bIncludeVariables)
+// // 	//{
+// // 	//    return CallStack;
+// // 	//}
+// 
+// 	TArray<UnLua::FLuaVariable> LocalVariables;
+// 	TArray<UnLua::FLuaVariable> Upvalues;
+// 	if (UnLua::GetStackVariables(L, 1, LocalVariables, Upvalues))     // get variable infos of level 1
+// 	{
+// 	    CallStack += TEXT("\nLocalValue :");
+// 	    for (const UnLua::FLuaVariable &Var : LocalVariables)
+// 	    {
+// 	        if (Var.Key.Find(TEXT("_ENV")) >= 0)
+// 	        {
+// 	            continue;
+// 	        }
+// 	        FString DisplayInfo = FString::Printf(TEXT(" %s : %s \n"), *Var.Key, *Var.Value.ToString());
+// 	        CallStack += DisplayInfo;
+// 	    }
+// 
+// 	    CallStack += TEXT("\nUpValue :");
+// 	    for (const UnLua::FLuaVariable &Var : Upvalues)
+// 	    {
+// 	        if (Var.Key.Find(TEXT("_ENV")) >= 0)
+// 	        {
+// 	            continue;
+// 	        }
+// 	        FString DisplayInfo = FString::Printf(TEXT(" %s : %s \n"), *Var.Key, *Var.Value.ToString());
+// 	        CallStack += DisplayInfo;
+// 	    }
+// 	}
+// 
+ 	return CallStack;
+}
+
+bool DelCachedScriptContainer(lua_State *L,void *Key)
+{
+	if (!Key)
+	{
+		UNLUA_LOGERROR(L, LogUnLua, Warning, TEXT("%s, Invalid key!"), ANSI_TO_TCHAR(__FUNCTION__));
+		return false;
+	}
+
+	lua_getfield(L, LUA_REGISTRYINDEX, "ScriptContainerMap");
+
+	lua_pushlightuserdata(L, Key);
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+	int32 Type = lua_rawget(L, -2);
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+	if (Type == LUA_TUSERDATA)//try to release
+	{
+		lua_pop(L, 1);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+		lua_pushlightuserdata(L, Key);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+		lua_pushnil(L);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+		lua_rawset(L, -3);                                  // cache it in 'ScriptContainerMap'
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+	}
+#if UE_BUILD_DEBUG
+	{
+		check(Type == LUA_TUSERDATA || Type == LUA_TNIL);
+	}
+#endif
+	lua_remove(L, -1);
+	stackDump(L);
+
+	return true;
+}
+
 /**
  * Find a cached script container or create a new one
  *
@@ -402,28 +539,64 @@ void* CacheScriptContainer(lua_State *L, void *Key, const FScriptContainerDesc &
 
     // return null if container is already cached, or create/cache/return a new ud
     void *Userdata = nullptr;
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
     lua_getfield(L, LUA_REGISTRYINDEX, "ScriptContainerMap");
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
     lua_pushlightuserdata(L, Key);
-    int32 Type = lua_rawget(L, -2);             
-    if (Type == LUA_TNIL)
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+     int32 Type = lua_rawget(L, -2);  
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
+    //if (Type == LUA_TNIL)
     {
         lua_pop(L, 1);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
 
         Userdata = lua_newuserdata(L, Desc.GetSize());      // create new userdata
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
         luaL_setmetatable(L, Desc.GetName());               // set metatable
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
         lua_pushlightuserdata(L, Key);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
         lua_pushvalue(L, -2);
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
+
         lua_rawset(L, -4);                                  // cache it in 'ScriptContainerMap'
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
 
         MarkScriptContainer(L, -1);                         // set flag
+		stackDump(L);
+		//UE_LOG(LogUnLua, Warning, TEXT("%s"), *GetLuaCallStackLocal(L));
     }
 #if UE_BUILD_DEBUG
-    else
-    {
-        check(Type == LUA_TUSERDATA);
-    }
+// 	else
+// 	{
+// 		check(Type == LUA_TUSERDATA);
+// 	}
+
+	{
+		check(Type == LUA_TUSERDATA || Type == LUA_TNIL);
+	}
 #endif
     lua_remove(L, -2);
+	stackDump(L);
+	//UE_LOG(LogUnLua, Warning, TEXT("luastack:%s"), *GetLuaCallStackLocal(L));
     return Userdata;            // return null if container is already cached, or the new created userdata otherwise
 }
 

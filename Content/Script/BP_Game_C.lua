@@ -12,7 +12,7 @@ function BP_Game_C:ReceiveBeginPlay()
 	self.SpawnOrigin = UE4.FVector(650.0, 0.0, 100.0)
 	self.SpawnLocation = UE4.FVector()
 	self.AICharacterClass = UE4.UClass.Load("/Game/Core/Blueprints/AI/BP_AICharacter.BP_AICharacter_C")
-	UE4.UKismetSystemLibrary.K2_SetTimerDelegate({self, BP_Game_C.SpawnEnemy}, self.EnemySpawnInterval, true)
+	--UE4.UKismetSystemLibrary.K2_SetTimerDelegate({self, BP_Game_C.SpawnEnemy}, self.EnemySpawnInterval, true)
 end
 
 function BP_Game_C:SpawnEnemy()
