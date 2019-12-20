@@ -338,27 +338,13 @@ class FArrayPropertyDesc : public FPropertyDesc
 {
 public:
     explicit FArrayPropertyDesc(UProperty *InProperty)
-        : FPropertyDesc(InProperty)
-    {
-        InnerProperty = FPropertyDesc::Create(ArrayProperty->Inner);        // create inner property descriptor
+        : FPropertyDesc(InProperty), InnerProperty(FPropertyDesc::Create(ArrayProperty->Inner))
+    {}
 
-		FString strname;
-		ArrayProperty->GetName(strname);
-		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Create(ArrayProperty->Inner) InnerPropertyName:%s,arrayPropertyName:%s,InnerPropertyAddress:%d!"),
-			*InnerProperty->GetName(), *strname, InnerProperty);
+    ~FArrayPropertyDesc()
+    {
+        InnerProperty.Reset();                                              // release inner property descriptor
     }
-
-    virtual ~FArrayPropertyDesc()
-    {
-		FString strname;
-		ArrayProperty->GetName(strname);
-
-		UE_LOG(LogUnLua, Warning, TEXT("!!!  FPropertyDesc::Release(InnerProperty) InnerPropertyName:%s,arrayPropertyName:%s,InnerPropertyAddress:%d!"),
-			*InnerProperty->GetName(), *strname, InnerProperty);
-
-        FPropertyDesc::Release(InnerProperty);                              // release inner property descriptor
-		InnerProperty = nullptr;
-	}
 
     virtual bool CopyBack(lua_State *L, int32 SrcIndexInStack, void *DestContainerPtr) override
     {
@@ -453,7 +439,7 @@ public:
     }
 
 private:
-    FPropertyDesc *InnerProperty;
+    TSharedPtr<UnLua::ITypeInterface> InnerProperty;
 };
 
 /**
@@ -463,16 +449,13 @@ class FMapPropertyDesc : public FPropertyDesc
 {
 public:
     explicit FMapPropertyDesc(UProperty *InProperty)
-        : FPropertyDesc(InProperty)
-    {
-        InnerProperties.Add(FPropertyDesc::Create(MapProperty->KeyProp));       // create key property descriptor
-        InnerProperties.Add(FPropertyDesc::Create(MapProperty->ValueProp));     // create value property descriptor
-    }
+        : FPropertyDesc(InProperty), KeyProperty(FPropertyDesc::Create(MapProperty->KeyProp)), ValueProperty(FPropertyDesc::Create(MapProperty->ValueProp))
+    {}
 
     ~FMapPropertyDesc()
     {
-        FPropertyDesc::Release(InnerProperties[0]);                             // release key property descriptor
-        FPropertyDesc::Release(InnerProperties[1]);                             // release value property descriptor
+        KeyProperty.Reset();                // release key property descriptor
+        ValueProperty.Reset();              // release value property descriptor
     }
 
     virtual bool CopyBack(lua_State *L, int32 SrcIndexInStack, void *DestContainerPtr) override
@@ -506,7 +489,7 @@ public:
             //MapProperty->InitializeValue(ScriptMap);
             MapProperty->CopyCompleteValue(ScriptMap, ValuePtr);
             void *Userdata = NewScriptContainer(L, FScriptContainerDesc::Map);
-            new(Userdata) FLuaMap(ScriptMap, InnerProperties[0], InnerProperties[1], FLuaMap::OwnedBySelf);
+            new(Userdata) FLuaMap(ScriptMap, KeyProperty, ValueProperty, FLuaMap::OwnedBySelf);
         }
         else
         {
@@ -514,7 +497,7 @@ public:
             void *Userdata = CacheScriptContainer(L, ScriptMap, FScriptContainerDesc::Map);
             if (Userdata)
             {
-                FLuaMap *LuaMap = new(Userdata) FLuaMap(ScriptMap, InnerProperties[0], InnerProperties[1], FLuaMap::OwnedByOther);
+                FLuaMap *LuaMap = new(Userdata) FLuaMap(ScriptMap, KeyProperty, ValueProperty, FLuaMap::OwnedByOther);
             }
         }
     }
@@ -525,7 +508,7 @@ public:
         if (Type == LUA_TTABLE)
         {
             FScriptMap ScriptMap;
-            FLuaMap LuaMap(&ScriptMap, InnerProperties[0], InnerProperties[1], FLuaMap::OwnedByOther);
+            FLuaMap LuaMap(&ScriptMap, KeyProperty, ValueProperty, FLuaMap::OwnedByOther);
             TraverseTable(L, IndexInStack, &LuaMap, FMapPropertyDesc::FillMap);
             ArrayProperty->CopyCompleteValue(ValuePtr, &ScriptMap);
         }
@@ -561,7 +544,8 @@ public:
     }
 
 private:
-    TArray<FPropertyDesc*> InnerProperties;
+    TSharedPtr<UnLua::ITypeInterface> KeyProperty;
+    TSharedPtr<UnLua::ITypeInterface> ValueProperty;
 };
 
 /**
@@ -571,14 +555,12 @@ class FSetPropertyDesc : public FPropertyDesc
 {
 public:
     explicit FSetPropertyDesc(UProperty *InProperty)
-        : FPropertyDesc(InProperty)
-    {
-        InnerProperty = FPropertyDesc::Create(SetProperty->ElementProp);        // create element property descriptor
-    }
+        : FPropertyDesc(InProperty), InnerProperty(FPropertyDesc::Create(SetProperty->ElementProp))
+    {}
 
     ~FSetPropertyDesc()
     {
-        FPropertyDesc::Release(InnerProperty);                                  // release element property descriptor
+        InnerProperty.Reset();                                                  // release element property descriptor
     }
 
     virtual bool CopyBack(lua_State *L, int32 SrcIndexInStack, void *DestContainerPtr) override
@@ -664,7 +646,7 @@ public:
     }
 
 private:
-    FPropertyDesc *InnerProperty;
+    TSharedPtr<UnLua::ITypeInterface> InnerProperty;
 };
 
 class FStructPropertyDesc : public FPropertyDesc
@@ -958,14 +940,6 @@ FPropertyDesc* FPropertyDesc::Create(UProperty *InProperty)
     return nullptr;
 }
 
-/**
- * Release a property descriptor
- */
-void FPropertyDesc::Release(FPropertyDesc *PropertyDesc)
-{
-    delete PropertyDesc;
-}
-
 
 /**
  * Function descriptor constructor
@@ -1096,7 +1070,7 @@ FFunctionDesc::~FFunctionDesc()
     // release cached property descriptors
     for (FPropertyDesc *Property : Properties)
     {
-        FPropertyDesc::Release(Property);
+        delete Property;
     }
 
     // remove Lua reference for this function
@@ -1498,7 +1472,7 @@ FClassDesc::~FClassDesc()
     }
     for (FPropertyDesc *Property : Properties)
     {
-        FPropertyDesc::Release(Property);
+        delete Property;
     }
     for (FFunctionDesc *Function : Functions)
     {
