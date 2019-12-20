@@ -150,7 +150,7 @@ function UnLuaPerformanceTestProxy:ReceiveBeginPlay()
 			print("===1")
 			obj.mydelegate:Bind(self,UnLuaPerformanceTestProxy.TestObjectDelegate)
 			print("===2")
-			obj.mydelegate:Execute(TestInts,true)--crash 循环第二次执行到这里的时候崩溃
+			obj.mydelegate:Execute(TestInts,true)--ok
 			print("===3")
 			obj.mydelegate:Unbind()
 			TestInts:Add(i)

@@ -67,13 +67,13 @@ function BP_PlayerController_C:MoveRight(AxisValue)
 end
 
 function BP_PlayerController_C:Fire_Pressed()
-	-- print("=============start test string array")
-	-- local array = UE4.TArray(FString)
-	-- array:Add("FString1")
-	-- array:Add("FString2")
-	-- array:Add("FString3")
-	-- array:Add("FString4")
-	-- self:TestArrayString(array)--crash TestArrayString是个run in server的bp event
+	print("=============start test string array")
+	local array = UE4.TArray(FString)
+	array:Add("FString1")
+	array:Add("FString2")
+	array:Add("FString3")
+	array:Add("FString4")
+	self:TestArrayString(array)--crash TestArrayString是个run in server的bp event
 
 	print("=============start test int32 array")
 	local array = UE4.TArray(int32)
