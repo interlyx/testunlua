@@ -18,5 +18,6 @@ using UnrealBuildTool;public class TPSProject : ModuleRules{    public TPSPr
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "InputCore"
+                "InputCore",
+                "UMG"
             }            );    }}

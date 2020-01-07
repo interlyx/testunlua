@@ -383,6 +383,14 @@ bool FLuaContext::TryToBindLua(UObjectBaseUtility *Object)
     }
 #endif
 
+	FString name;
+	Object->GetName(name);
+	if (name.Contains("UMG_Sub"))
+	{
+		int i = 0;
+	}
+
+
     static UClass *InterfaceClass = UUnLuaInterface::StaticClass();
     if (!Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))           // filter out CDO and ArchetypeObjects
     {
