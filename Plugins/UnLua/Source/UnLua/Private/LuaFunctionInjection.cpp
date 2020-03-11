@@ -36,7 +36,11 @@ DEFINE_FUNCTION(FLuaInvoker::execCallLua)
         }
         else
         {
-            Stack.SkipCode(1);      // skip EX_CallLua
+            if (Func->GetNativeFunc() == (FNativeFuncPtr)&FLuaInvoker::execCallLua)
+            {
+                check(*Stack.Code == EX_CallLua);
+                Stack.SkipCode(1);      // skip EX_CallLua only when called from native func
+            }
         }
     }
 
@@ -138,8 +142,8 @@ struct FFakeProperty : public UField
  */
 UFunction* DuplicateUFunction(UFunction *TemplateFunction, UClass *OuterClass, FName NewFuncName)
 {
-    // (int32)offsetof(UProperty, RepNotifyFunc) - sizeof(int32);    // offset for Offset_Internal... todo: use UProperty::Link()
     static int32 Offset = offsetof(FFakeProperty, Offset_Internal);
+    static FArchive Ar;         // dummy archive used for UProperty::Link()
 
     UFunction *NewFunc = DuplicateObject(TemplateFunction, OuterClass, NewFuncName);
     NewFunc->PropertiesSize = TemplateFunction->PropertiesSize;
@@ -153,11 +157,12 @@ UFunction* DuplicateUFunction(UFunction *TemplateFunction, UClass *OuterClass, F
         while (true)
         {
             check(SrcProperty && DestProperty);
-            DestProperty->ArrayDim = SrcProperty->ArrayDim;
-            DestProperty->ElementSize = SrcProperty->ElementSize;
-            DestProperty->PropertyFlags = SrcProperty->PropertyFlags;
+            DestProperty->Link(Ar);
+            //DestProperty->ArrayDim = SrcProperty->ArrayDim;
+            //DestProperty->ElementSize = SrcProperty->ElementSize;
+            //DestProperty->PropertyFlags = SrcProperty->PropertyFlags;
             DestProperty->RepIndex = SrcProperty->RepIndex;
-            *((int32*)((uint8*)DestProperty + Offset)) = *((int32*)((uint8*)SrcProperty + Offset));        // set Offset_Internal ...
+            *((int32*)((uint8*)DestProperty + Offset)) = *((int32*)((uint8*)SrcProperty + Offset)); // set Offset_Internal (Offset_Internal set by DestProperty->Link(Ar) is incorrect because of incorrect Outer class)
             if (--NumParams < 1)
             {
                 break;
@@ -207,7 +212,11 @@ void RemoveUFunction(UFunction *Function, UClass *OuterClass)
  */
 void OverrideUFunction(UFunction *Function, FNativeFuncPtr NativeFunc, void *Userdata, bool bInsertOpcodes)
 {
-    Function->SetNativeFunc(NativeFunc);
+    if (Function->HasAnyFunctionFlags(FUNC_Native))
+    {
+        Function->SetNativeFunc(NativeFunc);
+    }
+
     if (Function->Script.Num() < 1)
     {
 #if UE_BUILD_SHIPPING || UE_BUILD_TEST
